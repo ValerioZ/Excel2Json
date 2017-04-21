@@ -152,7 +152,7 @@ public class converter {
             List cells = (List) row;
             if (metricsList.contains(cells.get(0))) {
                 currentMetric = cells.get(0).toString();
-                data.put(currentMetric, generateRandomValue(data.get(currentMetric), currentMetric, sector, cells.size()));
+//                data.put(currentMetric, generateRandomValue(data.get(currentMetric), currentMetric, sector, cells.size()));
             } else if (streamMap.keySet().contains(cells.get(0))) {
                 List collect = (List) cells.stream().filter(a -> false == a.equals(cells.get(0))).collect(Collectors
                         .toList());
@@ -240,14 +240,38 @@ public class converter {
         JSONArray jsonStreams = new JSONArray();
         for (Map.Entry<String, List> stringListEntry : streams.entrySet()) {
             JSONObject stream = new JSONObject();
-            List value = stringListEntry.getValue();
-            int[] values = convertIntArray(value);
             stream.put("key", stringListEntry.getKey());
-            JSONArray jsonArray = new JSONArray(values);
+            List value = stringListEntry.getValue();
+            JSONArray jsonArray = null;
+            if (value.get(0).toString().contains(".")) {
+                double[] values = convertDoubleArray(value);
+                jsonArray = new JSONArray(values);
+            }
+            else
+            {
+                int[] values = convertIntArray(value);
+                jsonArray = new JSONArray(values);
+            }
+
             stream.put("value", jsonArray);
             jsonStreams.put(stream);
         }
         return jsonStreams;
+    }
+
+    private double[] convertDoubleArray(List value) {
+        double[] values = new double[value.size()];
+        for (int i = 0; i < value.size(); i++) {
+            try {
+                values[i] = Double.valueOf(value.get(i).toString());
+            }
+            catch (NumberFormatException ex)
+            {
+                System.err.println(ex.getMessage());
+                ex.printStackTrace();
+            }
+        }
+        return values;
     }
 
     private int[] convertIntArray(List value) {
@@ -273,7 +297,13 @@ public class converter {
                 break;
             case NUMERIC:
             case FORMULA:
-                result = String.valueOf((int) cell.getNumericCellValue());
+                double numericCellValue = cell.getNumericCellValue();
+                if (numericCellValue == (int)numericCellValue) {
+                    result = String.valueOf((int)numericCellValue);
+                }
+                else {
+                    result = String.valueOf(cell.getNumericCellValue());
+                }
                 break;
             default:
                 result = "";
